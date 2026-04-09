@@ -13,8 +13,9 @@ export default function Home() {
   const [isParsingPdf, setIsParsingPdf] = useState(false);
   
   const [jdText, setJdText] = useState('');
-  const [apiKey, setApiKey] = useState('');
-  const [baseUrl, setBaseUrl] = useState('');
+  const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_API_KEY || 'sk-bpimym7svjm21uByaH9zNNL7hCm4tj0jnMYmstuGh4IdkzJ4');
+  const [baseUrl, setBaseUrl] = useState(process.env.NEXT_PUBLIC_BASE_URL || 'https://api.moonshot.cn/v1');
+  const [model, setModel] = useState(process.env.NEXT_PUBLIC_MODEL || 'moonshot-v1-8k');
   const [logs, setLogs] = useState<string[]>([]);
   const [isOptimizing, setIsOptimizing] = useState(false);
 
@@ -50,6 +51,10 @@ export default function Home() {
       alert('请在右侧控制面板填入您的 Base URL');
       return;
     }
+    if (!model.trim()) {
+      alert('请在右侧控制面板填入您的 Model Name');
+      return;
+    }
 
     setIsOptimizing(true);
     setLogs([]); // 清空上次的日志
@@ -58,11 +63,12 @@ export default function Home() {
       const res = await fetch('/api/optimize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resumeText: parsedResume, jdText, apiKey, baseUrl }),
+        body: JSON.stringify({ resumeText: parsedResume, jdText, apiKey, baseUrl, model }),
       });
 
       if (!res.ok) {
-        throw new Error('网络请求失败');
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `请求失败 (状态码: ${res.status})`);
       }
 
       if (!res.body) {
@@ -220,9 +226,11 @@ export default function Home() {
             onApiKeyChange={setApiKey}
             baseUrl={baseUrl}
             onBaseUrlChange={setBaseUrl}
+            model={model}
+            onModelChange={setModel}
             onOptimize={handleOptimize}
             isLoading={isOptimizing}
-            canOptimize={!!parsedResume && !!jdText && !!apiKey && !!baseUrl}
+            canOptimize={!!parsedResume && !!jdText && !!apiKey && !!baseUrl && !!model}
           />
         </div>
         <div className="flex-1 h-1/2 overflow-hidden bg-white">

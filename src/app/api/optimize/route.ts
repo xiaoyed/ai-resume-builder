@@ -10,7 +10,7 @@ export const maxDuration = 120; // 设定较长超时时间，防止生成长篇
 
 export async function POST(req: Request) {
   try {
-    const { resumeText, jdText, apiKey, baseUrl } = await req.json();
+    const { resumeText, jdText, apiKey, baseUrl, model = 'qwen-plus' } = await req.json();
 
     if (!resumeText || !jdText) {
       return NextResponse.json({ error: '简历内容或 JD 内容缺失' }, { status: 400 });
@@ -47,13 +47,14 @@ export async function POST(req: Request) {
     const userPrompt = `【目标岗位 JD】\n${jdText}\n\n【原始简历】\n${resumeText}\n\n请开始执行思考和优化改写。`;
 
     const stream = await openai.chat.completions.create({
-      model: 'qwen-plus',
+      model: model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
       stream: true,
       temperature: 0.7,
+      max_tokens: 4096,
     });
 
     // 转换 OpenAI stream 为 Web API ReadableStream
